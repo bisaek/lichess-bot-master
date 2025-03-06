@@ -23,6 +23,9 @@ class Bot(MinimalEngine):
     def search(self, board: chess.Board, *args: HOMEMADE_ARGS_TYPE) -> PlayResult:
         #logger.info(self.minimax(board, 1).uci())
         self.counter = 0
+
+        logger.info(self.eval(board, True))
+
         return PlayResult(self.minimax(board, 1, True), None)
 
     def minimax(self, board: chess.Board, depth, log=False):
@@ -39,12 +42,13 @@ class Bot(MinimalEngine):
             board.push(legal_move)
             move_eval = -self.minimax(board, depth + 1)
             if log:
-                logger.info(depth)
-                logger.info(legal_move.xboard())
-                logger.info(move_eval)
+                logger.info(f"depth: {depth}")
+                logger.info(f"move: {legal_move.uci()}")
+                logger.info(f"eval: {move_eval}")
                 logger.info(f"legal moves count: {i}/{legal_moves_count}")
                 logger.info(f"called: {self.counter}")
-                logger.info(board)
+                logger.info(board.fen())
+                #logger.info(board)
             if move_eval > best_move_eval:
 
                     #self.minimax(board, depth + 1, True)
@@ -59,36 +63,64 @@ class Bot(MinimalEngine):
         if depth == 1:
             if log:
                 logger.info("best move")
-                logger.info(legal_move.xboard())
-                logger.info(move_eval)
+                logger.info(f"move: {best_move.uci()}")
+                logger.info(f"eval: {best_move_eval}")
                 logger.info(f"called: {self.counter}")
+                logger.info(board.fen())
                 logger.info(board)
             return best_move
         else:
             return best_move_eval
 
-    def eval(self, board: chess.Board):
+    def eval(self, board: chess.Board, log=False):
         eval = 0
-        engine_color = board.turn
-        opponent_color = chess.WHITE if engine_color == chess.BLACK else chess.BLACK
-        eval += len(board.pieces(chess.PAWN, engine_color))
-        eval += len(board.pieces(chess.KNIGHT, engine_color)) * 3
-        eval += len(board.pieces(chess.BISHOP, engine_color)) * 3
-        eval += len(board.pieces(chess.ROOK, engine_color)) * 5
-        eval += len(board.pieces(chess.QUEEN, engine_color)) * 9
-        eval -= len(board.pieces(chess.PAWN, opponent_color))
-        eval -= len(board.pieces(chess.KNIGHT, opponent_color)) * 3
-        eval -= len(board.pieces(chess.BISHOP, opponent_color)) * 3
-        eval -= len(board.pieces(chess.ROOK, opponent_color)) * 5
-        eval -= len(board.pieces(chess.QUEEN, opponent_color)) * 9
+        color = board.turn
+        eval += len(board.pieces(chess.PAWN, color))
+        eval += len(board.pieces(chess.KNIGHT, color)) * 3
+        eval += len(board.pieces(chess.BISHOP, color)) * 3
+        eval += len(board.pieces(chess.ROOK, color)) * 5
+        eval += len(board.pieces(chess.QUEEN, color)) * 9
+        eval -= len(board.pieces(chess.PAWN, not color))
+        eval -= len(board.pieces(chess.KNIGHT, not color)) * 3
+        eval -= len(board.pieces(chess.BISHOP, not color)) * 3
+        eval -= len(board.pieces(chess.ROOK, not color)) * 5
+        eval -= len(board.pieces(chess.QUEEN, not color)) * 9
 
         if board.fullmove_number < 10:
             eval += 1/30 * board.legal_moves.count()
-            
+            eval += len(board.attackers(color, chess.D4)) * 0.1
+            eval += len(board.attackers(color, chess.D5)) * 0.1
+            eval += len(board.attackers(color, chess.E4)) * 0.1
+            eval += len(board.attackers(color, chess.E5)) * 0.1
+
+        #bishops and knight are defended
+        for piece in list(board.pieces(chess.BISHOP, color)) + list(board.pieces(chess.KNIGHT, color)):
+            if self.is_defended(board, piece):
+                eval -= 1
+                if log:
+                    logger.info(chess.square_name(piece))
+
+        # rocks are defended
+        for piece in list(board.pieces(chess.ROOK, color)):
+            if self.is_defended(board, piece):
+                eval -= 2
+                if log:
+                    logger.info(chess.square_name(piece))
+
+        # queen are defended
+        for piece in list(board.pieces(chess.QUEEN, color)):
+            if self.is_defended(board, piece):
+                eval -= 3
+                if log:
+                    logger.info(chess.square_name(piece))
+
         return eval
 
-
-
+    def is_defended(self, board: chess.Board, square) -> bool:
+        if board.turn == chess.WHITE:
+            return not board.is_attacked_by(board.turn, square) and chess.square_rank(square) > 3
+        else:
+            return not board.is_attacked_by(board.turn, square) and chess.square_rank(square) < 4
 
 class ExampleEngine(MinimalEngine):
     """An example engine that all homemade engines inherit."""

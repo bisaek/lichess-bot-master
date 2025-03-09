@@ -95,8 +95,9 @@ class Bot(MinimalEngine):
     def search(self, board: chess.Board, *args: HOMEMADE_ARGS_TYPE) -> PlayResult:
         #logger.info(self.minimax(board, 1).uci())
         self.counter = 0
+        self.quiesce_counter = 0
 
-        logger.info(self.eval(board, board.turn, True))
+        logger.info(list(board.generate_legal_captures()))
 
         chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(self.alpha_beta(board, 1, float("-inf"), float("inf"), True), None)
@@ -105,9 +106,9 @@ class Bot(MinimalEngine):
 
     def alpha_beta(self, board: chess.Board, depth, alpha, beta, log=False):
         self.counter += 1
-        if depth >= 5 or board.legal_moves.count() == 0:
+        if depth >= 4 or board.legal_moves.count() == 0:
             #if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
-            return self.eval(board, board.turn) - self.eval(board, not board.turn)
+            return self.quiesce(board, alpha, beta)
             #logger.info(depth)
         best_move_eval = float("-inf")
         best_move = None
@@ -126,8 +127,11 @@ class Bot(MinimalEngine):
                 logger.info(f"eval: {move_eval}")
                 logger.info(f"legal moves count: {i}/{legal_moves_count}")
                 logger.info(f"called: {self.counter}")
+                logger.info(f"quiesce called: {self.quiesce_counter}")
                 logger.info(board.fen())
                 #logger.info(board)
+
+            board.pop()
             if move_eval > best_move_eval:
 
                     #self.minimax(board, depth + 1, True)
@@ -136,7 +140,6 @@ class Bot(MinimalEngine):
                 if move_eval > alpha:
                     alpha = move_eval
             
-            board.pop()
             if move_eval >= beta:
                 #if depth == 1:
                 #    return best_move
@@ -156,13 +159,39 @@ class Bot(MinimalEngine):
             return best_move
         else:
             return best_move_eval
+        
+    def quiesce(self, board: chess.Board, alpha, beta):
+        self.quiesce_counter += 1
+        stand_pad = self.eval(board, board.turn) - self.eval(board, not board.turn)
+        best_value = stand_pad
+        if stand_pad >= beta:
+            return stand_pad
+        if alpha < stand_pad:
+            alpha = stand_pad
+        
+        for move in list(board.generate_legal_captures()):
+            board.push(move)
+            score = -self.quiesce(board, -beta, -alpha)
+            board.pop()
+
+            if score >= beta:
+                return score
+            if score > best_value:
+                best_value = score
+            if score > alpha:
+                alpha = score
+        return best_value
+            
 
     def move_ordering(self, move: chess.Move, board: chess.Board):
-        board.push(move)
-        score = self.eval(board, not board.turn)
-        board.pop()
-        #if board.is_capture(move):
-           #score += self.get_piece_value(board.)
+        # board.push(move)
+        # score = self.eval(board, not board.turn)
+        # board.pop()
+
+
+        
+        if board.is_capture(move):
+           score = 10 * self.get_piece_value(board.piece_at(move.to_square).piece_type) - self.get_piece_value(board.piece_at(move.from_square).piece_type)
         return score
 
     def eval(self, board: chess.Board, color: chess.Color, log=False):

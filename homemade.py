@@ -6,17 +6,26 @@ With these classes, bot makers will not have to implement the UCI or XBoard inte
 from operator import index
 
 import chess
+import chess.polyglot
 from chess.engine import PlayResult, Limit
 import random
 from lib.engine_wrapper import MinimalEngine
 from lib.lichess_types import MOVE, HOMEMADE_ARGS_TYPE
 import logging
-
+from functools import lru_cache 
 
 # Use this logger variable to print messages to the console or log files.
 # logger.info("message") will always print "message" to the console or log file.
 # logger.debug("message") will only print "message" if verbose logging is enabled.
 logger = logging.getLogger(__name__)
+
+PIECE_VALUES = {
+    chess.PAWN: 1,
+    chess.BISHOP: 3,
+    chess.KNIGHT: 3,
+    chess.ROOK: 5,
+    chess.QUEEN: 9
+}
 
 class Bot(MinimalEngine):
 
@@ -27,6 +36,7 @@ class Bot(MinimalEngine):
         logger.info(self.eval(board, board.turn, True))
 
         #return PlayResult(self.minimax(board, 1, True), None)
+        chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(self.alpha_beta(board, 1, float("-inf"), float("inf"), True), None)
 
 
@@ -71,17 +81,20 @@ class Bot(MinimalEngine):
         else:
             return best_move_eval
 
+    #@lru_cache(maxsize=1280000)
     def alpha_beta(self, board: chess.Board, depth, alpha, beta, log=False):
         self.counter += 1
-        if depth >= 6 or board.legal_moves.count() == 0:
-            if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
-                return self.eval(board, board.turn) - self.eval(board, not board.turn)
+        if depth >= 5 or board.legal_moves.count() == 0:
+            #if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
+            return self.eval(board, board.turn) - self.eval(board, not board.turn)
             #logger.info(depth)
         best_move_eval = float("-inf")
         best_move = None
         i = 0
         legal_moves_count = board.legal_moves.count()
-        for legal_move in list(board.legal_moves):
+        legal_moves = list(board.legal_moves)
+        #legal_moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
+        for legal_move in legal_moves:
             i += 1
 
             board.push(legal_move)
@@ -123,6 +136,14 @@ class Bot(MinimalEngine):
         else:
             return best_move_eval
 
+    def move_ordering(self, move: chess.Move, board: chess.Board):
+        board.push(move)
+        score = self.eval(board, not board.turn)
+        board.pop()
+        #if board.is_capture(move):
+           #score += self.get_piece_value(board.)
+        return score
+
     def eval(self, board: chess.Board, color: chess.Color, log=False):
         if board.outcome() != None:
             if board.outcome().winner == color:
@@ -131,11 +152,11 @@ class Bot(MinimalEngine):
                 return 0
         
         eval = 0
-        eval += len(board.pieces(chess.PAWN, color))
-        eval += len(board.pieces(chess.KNIGHT, color)) * 3
-        eval += len(board.pieces(chess.BISHOP, color)) * 3
-        eval += len(board.pieces(chess.ROOK, color)) * 5
-        eval += len(board.pieces(chess.QUEEN, color)) * 9
+        eval += len(board.pieces(chess.PAWN, color)) * self.get_piece_value(chess.PAWN)
+        eval += len(board.pieces(chess.KNIGHT, color)) * self.get_piece_value(chess.KNIGHT)
+        eval += len(board.pieces(chess.BISHOP, color)) * self.get_piece_value(chess.BISHOP)
+        eval += len(board.pieces(chess.ROOK, color)) * self.get_piece_value(chess.ROOK)
+        eval += len(board.pieces(chess.QUEEN, color)) * self.get_piece_value(chess.QUEEN)
 
         if board.fullmove_number < 25:
             eval += 1/30 * board.legal_moves.count()
@@ -144,26 +165,26 @@ class Bot(MinimalEngine):
             eval += len(board.attackers(color, chess.E4)) * 0.1
             eval += len(board.attackers(color, chess.E5)) * 0.1
 
-            #bishops and knight are defended
-            for piece in list(board.pieces(chess.BISHOP, color)) + list(board.pieces(chess.KNIGHT, color)):
-                if self.is_defended(board, piece, color):
-                    eval -= 0.3
-                    if log:
-                        logger.info(chess.square_name(piece))
+            # #bishops and knight are defended
+            # for piece in list(board.pieces(chess.BISHOP, color)) + list(board.pieces(chess.KNIGHT, color)):
+            #     if self.is_defended(board, piece, color):
+            #         eval -= 0.3
+            #         if log:
+            #             logger.info(chess.square_name(piece))
 
-            # rocks are defended
-            for piece in list(board.pieces(chess.ROOK, color)):
-                if self.is_defended(board, piece, color):
-                    eval -= 0.5
-                    if log:
-                        logger.info(chess.square_name(piece))
+            # # rocks are defended
+            # for piece in list(board.pieces(chess.ROOK, color)):
+            #     if self.is_defended(board, piece, color):
+            #         eval -= 0.5
+            #         if log:
+            #             logger.info(chess.square_name(piece))
 
-            # queen are defended
-            for piece in list(board.pieces(chess.QUEEN, color)):
-                if self.is_defended(board, piece, color):
-                    eval -= 0.9
-                    if log:
-                        logger.info(chess.square_name(piece))
+            # # queen are defended
+            # for piece in list(board.pieces(chess.QUEEN, color)):
+            #     if self.is_defended(board, piece, color):
+            #         eval -= 0.9
+            #         if log:
+            #             logger.info(chess.square_name(piece))
 
         return eval
 
@@ -172,6 +193,9 @@ class Bot(MinimalEngine):
             return not board.is_attacked_by(color, square) and chess.square_rank(square) > 3
         else:
             return not board.is_attacked_by(color, square) and chess.square_rank(square) < 4
+        
+    def get_piece_value(self, piece_type: chess.PieceType):
+        return PIECE_VALUES[piece_type]
 
 class ExampleEngine(MinimalEngine):
     """An example engine that all homemade engines inherit."""

@@ -213,7 +213,8 @@ class Bot(MinimalEngine):
                 return 9999999
             elif board.outcome().winner == None:
                 return 0
-        
+        if log:
+            logger.info(self.is_end_game(board))
         eval = 0
         eval += len(board.pieces(chess.PAWN, color)) * self.get_piece_value(chess.PAWN)
         eval += len(board.pieces(chess.KNIGHT, color)) * self.get_piece_value(chess.KNIGHT)
@@ -252,10 +253,16 @@ class Bot(MinimalEngine):
                 eval += QUEEN_PIECE_SQUARE_TABLE[queen]
 
         for king in list(board.pieces(chess.KING, color)):
-            if color == chess.WHITE:
-                eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[63 - king]
+            if self.is_end_game(board):
+                if color == chess.WHITE:
+                    eval += KING_END_GAME_PIECE_SQUARE_TABLE[63 - king]
+                else:
+                    eval += KING_END_GAME_PIECE_SQUARE_TABLE[king]
             else:
-                eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[king]
+                if color == chess.WHITE:
+                    eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[63 - king]
+                else:
+                    eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[king]
 
         # if board.fullmove_number < 25:
         #     eval += 1/30 * board.legal_moves.count()
@@ -295,6 +302,16 @@ class Bot(MinimalEngine):
         
     def get_piece_value(self, piece_type: chess.PieceType):
         return PIECE_VALUES[piece_type]
+    
+    def is_end_game(self, board: chess.Board):
+        zero_queens = len(board.pieces(chess.QUEEN, chess.WHITE)) == 0 and len(board.pieces(chess.QUEEN, chess.BLACK)) == 0
+        zero_rooks = len(board.pieces(chess.ROOK, chess.WHITE)) == 0 and len(board.pieces(chess.ROOK, chess.BLACK)) == 0
+        white_minorpieces = len(board.pieces(chess.BISHOP, chess.WHITE)) + len(board.pieces(chess.KNIGHT, chess.WHITE))
+        black_minorpieces = len(board.pieces(chess.BISHOP, chess.BLACK)) + len(board.pieces(chess.KNIGHT, chess.BLACK))
+        return zero_queens or (zero_rooks and white_minorpieces <= 1 and black_minorpieces <= 1)
+
+        
+        
 
 class ExampleEngine(MinimalEngine):
     """An example engine that all homemade engines inherit."""

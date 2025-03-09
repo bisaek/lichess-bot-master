@@ -97,7 +97,10 @@ class Bot(MinimalEngine):
         self.counter = 0
         self.quiesce_counter = 0
 
-        logger.info(list(board.generate_legal_captures()))
+
+        moves = list(board.legal_moves)
+        moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
+        logger.info(moves)
 
         chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(self.alpha_beta(board, 1, float("-inf"), float("inf"), True), None)
@@ -106,7 +109,7 @@ class Bot(MinimalEngine):
 
     def alpha_beta(self, board: chess.Board, depth, alpha, beta, log=False):
         self.counter += 1
-        if depth >= 4 or board.legal_moves.count() == 0:
+        if depth >= 5 or board.legal_moves.count() == 0:
             #if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
             return self.quiesce(board, alpha, beta)
             #logger.info(depth)
@@ -115,7 +118,8 @@ class Bot(MinimalEngine):
         i = 0
         legal_moves_count = board.legal_moves.count()
         legal_moves = list(board.legal_moves)
-        #legal_moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
+        if depth == 1:
+            legal_moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
         for legal_move in legal_moves:
             i += 1
 
@@ -189,7 +193,7 @@ class Bot(MinimalEngine):
         # board.pop()
 
 
-        
+        score = 0
         if board.is_capture(move):
            score = 10 * self.get_piece_value(board.piece_at(move.to_square).piece_type) - self.get_piece_value(board.piece_at(move.from_square).piece_type)
         return score

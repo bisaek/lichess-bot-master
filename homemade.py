@@ -20,12 +20,75 @@ from functools import lru_cache
 logger = logging.getLogger(__name__)
 
 PIECE_VALUES = {
-    chess.PAWN: 1,
-    chess.BISHOP: 3,
-    chess.KNIGHT: 3,
-    chess.ROOK: 5,
-    chess.QUEEN: 9
+    chess.PAWN: 100,
+    chess.BISHOP: 320,
+    chess.KNIGHT: 330,
+    chess.ROOK: 500,
+    chess.QUEEN: 900
 }
+
+PAWN_PIECE_SQUARE_TABLE = [0,  0,  0,  0,  0,  0,  0,  0,
+                           50, 50, 50, 50, 50, 50, 50, 50,
+                           10, 10, 20, 30, 30, 20, 10, 10,
+                           5,  5,  10, 25, 25, 10, 5,  5,
+                           0,  0,  0,  20, 20, 0,  0,  0,
+                           5, -5, -10, 0,  0, -10,-5,  5,
+                           5,  10, 10,-20,-20, 10, 10, 5,
+                           0,  0,  0,  0,  0,  0,  0,  0]
+
+KNIGHT_PIECE_SQUARE_TABLE = [-50,-40,-30,-30,-30,-30,-40,-50,
+                             -40,-20,  0,  0,  0,  0,-20,-40,
+                             -30,  0, 10, 15, 15, 10,  0,-30,
+                             -30,  5, 15, 20, 20, 15,  5,-30,
+                             -30,  0, 15, 20, 20, 15,  0,-30,
+                             -30,  5, 10, 15, 15, 10,  5,-30,
+                             -40,-20,  0,  5,  5,  0,-20,-40,
+                             -50,-40,-30,-30,-30,-30,-40,-50,]
+
+BISHOP_PIECE_SQUARE_TABLE = [-20,-10,-10,-10,-10,-10,-10,-20,
+                             -10,  0,  0,  0,  0,  0,  0,-10,
+                             -10,  0,  5, 10, 10,  5,  0,-10,
+                             -10,  5,  5, 10, 10,  5,  5,-10,
+                             -10,  0, 10, 10, 10, 10,  0,-10,
+                             -10, 10, 10, 10, 10, 10, 10,-10,
+                             -10,  5,  0,  0,  0,  0,  5,-10,
+                             -20,-10,-10,-10,-10,-10,-10,-20,]
+
+ROOK_PIECE_SQUARE_TABLE = [  0,  0,  0,  0,  0,  0,  0,  0,
+                             5, 10, 10, 10, 10, 10, 10,  5,
+                            -5,  0,  0,  0,  0,  0,  0, -5,
+                            -5,  0,  0,  0,  0,  0,  0, -5,
+                            -5,  0,  0,  0,  0,  0,  0, -5,
+                            -5,  0,  0,  0,  0,  0,  0, -5,
+                            -5,  0,  0,  0,  0,  0,  0, -5,
+                             0,  0,  0,  5,  5,  0,  0,  0]
+
+QUEEN_PIECE_SQUARE_TABLE = [-20,-10,-10, -5, -5,-10,-10,-20,
+                            -10,  0,  0,  0,  0,  0,  0,-10,
+                            -10,  0,  5,  5,  5,  5,  0,-10,
+                            -5,  0,  5,  5,  5,  5,  0, -5,
+                             0,  0,  5,  5,  5,  5,  0, -5,
+                            -10,  5,  5,  5,  5,  5,  0,-10,
+                            -10,  0,  5,  0,  0,  0,  0,-10,
+                            -20,-10,-10, -5, -5,-10,-10,-20]
+
+KING_MIDDLE_GAME_PIECE_SQUARE_TABLE = [-30,-40,-40,-50,-50,-40,-40,-30,
+                                      -30,-40,-40,-50,-50,-40,-40,-30,
+                                      -30,-40,-40,-50,-50,-40,-40,-30,
+                                      -30,-40,-40,-50,-50,-40,-40,-30,
+                                      -20,-30,-30,-40,-40,-30,-30,-20,
+                                      -10,-20,-20,-20,-20,-20,-20,-10,
+                                       20, 20,  0,  0,  0,  0, 20, 20,
+                                       20, 30, 10,  0,  0, 10, 30, 20]
+
+KING_END_GAME_PIECE_SQUARE_TABLE = [-50,-40,-30,-20,-20,-30,-40,-50,
+                                    -30,-20,-10,  0,  0,-10,-20,-30,
+                                    -30,-10, 20, 30, 30, 20,-10,-30,
+                                    -30,-10, 30, 40, 40, 30,-10,-30,
+                                    -30,-10, 30, 40, 40, 30,-10,-30,
+                                    -30,-10, 20, 30, 30, 20,-10,-30,
+                                    -30,-30,  0,  0,  0,  0,-30,-30,
+                                    -50,-30,-30,-30,-30,-30,-30,-50]
 
 class Bot(MinimalEngine):
 
@@ -147,7 +210,7 @@ class Bot(MinimalEngine):
     def eval(self, board: chess.Board, color: chess.Color, log=False):
         if board.outcome() != None:
             if board.outcome().winner == color:
-                return 999
+                return 9999999
             elif board.outcome().winner == None:
                 return 0
         
@@ -158,12 +221,48 @@ class Bot(MinimalEngine):
         eval += len(board.pieces(chess.ROOK, color)) * self.get_piece_value(chess.ROOK)
         eval += len(board.pieces(chess.QUEEN, color)) * self.get_piece_value(chess.QUEEN)
 
-        if board.fullmove_number < 25:
-            eval += 1/30 * board.legal_moves.count()
-            eval += len(board.attackers(color, chess.D4)) * 0.1
-            eval += len(board.attackers(color, chess.D5)) * 0.1
-            eval += len(board.attackers(color, chess.E4)) * 0.1
-            eval += len(board.attackers(color, chess.E5)) * 0.1
+        for pawn in list(board.pieces(chess.PAWN, color)):
+            if color == chess.WHITE:
+                eval += PAWN_PIECE_SQUARE_TABLE[63 - pawn]
+            else:
+                eval += PAWN_PIECE_SQUARE_TABLE[pawn]
+
+        for knight in list(board.pieces(chess.KNIGHT, color)):
+            if color == chess.WHITE:
+                eval += KNIGHT_PIECE_SQUARE_TABLE[63 - knight]
+            else:
+                eval += KNIGHT_PIECE_SQUARE_TABLE[knight]
+
+        for bishop in list(board.pieces(chess.BISHOP, color)):
+            if color == chess.WHITE:
+                eval += BISHOP_PIECE_SQUARE_TABLE[63 - bishop]
+            else:
+                eval += BISHOP_PIECE_SQUARE_TABLE[bishop]
+
+        for rook in list(board.pieces(chess.ROOK, color)):
+            if color == chess.WHITE:
+                eval += ROOK_PIECE_SQUARE_TABLE[63 - rook]
+            else:
+                eval += ROOK_PIECE_SQUARE_TABLE[rook]
+
+        for queen in list(board.pieces(chess.QUEEN, color)):
+            if color == chess.WHITE:
+                eval += QUEEN_PIECE_SQUARE_TABLE[63 - queen]
+            else:
+                eval += QUEEN_PIECE_SQUARE_TABLE[queen]
+
+        for king in list(board.pieces(chess.KING, color)):
+            if color == chess.WHITE:
+                eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[63 - king]
+            else:
+                eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[king]
+
+        # if board.fullmove_number < 25:
+        #     eval += 1/30 * board.legal_moves.count()
+        #     eval += len(board.attackers(color, chess.D4)) * 0.1
+        #     eval += len(board.attackers(color, chess.D5)) * 0.1
+        #     eval += len(board.attackers(color, chess.E4)) * 0.1
+        #     eval += len(board.attackers(color, chess.E5)) * 0.1
 
             # #bishops and knight are defended
             # for piece in list(board.pieces(chess.BISHOP, color)) + list(board.pieces(chess.KNIGHT, color)):

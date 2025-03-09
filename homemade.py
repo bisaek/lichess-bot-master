@@ -98,53 +98,11 @@ class Bot(MinimalEngine):
 
         logger.info(self.eval(board, board.turn, True))
 
-        #return PlayResult(self.minimax(board, 1, True), None)
         chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(self.alpha_beta(board, 1, float("-inf"), float("inf"), True), None)
 
 
-    def minimax(self, board: chess.Board, depth, log=False):
-        self.counter += 1
-        if depth == 5 or board.legal_moves.count() == 0:
-            return self.eval(board, board.turn) - self.eval(board, not board.turn)
-        best_move_eval = float("-inf")
-        best_move = None
-        i = 0
-        legal_moves_count = board.legal_moves.count()
-        for legal_move in list(board.legal_moves):
-            i += 1
 
-            board.push(legal_move)
-            move_eval = -self.minimax(board, depth + 1)
-            if log:
-                logger.info(f"depth: {depth}")
-                logger.info(f"move: {legal_move.uci()}")
-                logger.info(f"eval: {move_eval}")
-                logger.info(f"legal moves count: {i}/{legal_moves_count}")
-                logger.info(f"called: {self.counter}")
-                logger.info(board.fen())
-                #logger.info(board)
-            if move_eval > best_move_eval:
-
-                    #self.minimax(board, depth + 1, True)
-                best_move_eval = move_eval
-                best_move = legal_move
-            board.pop()
-    
-
-        if depth == 1:
-            if log:
-                logger.info("best move")
-                logger.info(f"move: {best_move.uci()}")
-                logger.info(f"eval: {best_move_eval}")
-                logger.info(f"called: {self.counter}")
-                logger.info(board.fen())
-                logger.info(board)
-            return best_move
-        else:
-            return best_move_eval
-
-    #@lru_cache(maxsize=1280000)
     def alpha_beta(self, board: chess.Board, depth, alpha, beta, log=False):
         self.counter += 1
         if depth >= 5 or board.legal_moves.count() == 0:
@@ -264,33 +222,6 @@ class Bot(MinimalEngine):
                 else:
                     eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[king]
 
-        # if board.fullmove_number < 25:
-        #     eval += 1/30 * board.legal_moves.count()
-        #     eval += len(board.attackers(color, chess.D4)) * 0.1
-        #     eval += len(board.attackers(color, chess.D5)) * 0.1
-        #     eval += len(board.attackers(color, chess.E4)) * 0.1
-        #     eval += len(board.attackers(color, chess.E5)) * 0.1
-
-            # #bishops and knight are defended
-            # for piece in list(board.pieces(chess.BISHOP, color)) + list(board.pieces(chess.KNIGHT, color)):
-            #     if self.is_defended(board, piece, color):
-            #         eval -= 0.3
-            #         if log:
-            #             logger.info(chess.square_name(piece))
-
-            # # rocks are defended
-            # for piece in list(board.pieces(chess.ROOK, color)):
-            #     if self.is_defended(board, piece, color):
-            #         eval -= 0.5
-            #         if log:
-            #             logger.info(chess.square_name(piece))
-
-            # # queen are defended
-            # for piece in list(board.pieces(chess.QUEEN, color)):
-            #     if self.is_defended(board, piece, color):
-            #         eval -= 0.9
-            #         if log:
-            #             logger.info(chess.square_name(piece))
 
         return eval
 

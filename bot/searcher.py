@@ -2,7 +2,7 @@ import chess
 import logging
 import time
 from bot.evaluation import eval, get_piece_value
-from lib.lichess_bot import start
+from bot.transposition_table import TranspositionTable
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +28,14 @@ class Searcher:
         self.best_move_this_iteration = None
         #self.best_move_this_iteration_eval = float("-inf")
 
+        self.transpositionTable = TranspositionTable(board)
+
     def start_search(self):
         self.cancelled = False
         self.start_time = time.time()
         for depth in range(1, 20):
-            logger.info(self.get_ordered_legal_moves())
+            # logger.info(self.get_ordered_legal_moves())
+            #logger.info(self.transpositionTable.entries)
             self.alpha_beta(depth, float("-inf"), float("inf"), 0, True)
             logger.info(f'Depth: {depth}')
             logger.info(f'Time: {time.time() - self.start_time}')
@@ -55,7 +58,12 @@ class Searcher:
             # if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
             return self.quiesce(alpha, beta)
             # logger.info(depth)
+
+        #tt_eval = self.transpositionTable.get_evaluation(depth)
+        #if tt_eval is not None:
+        #    return tt_eval
         best_move_eval = float("-inf")
+        best_move = None
         i = 0
         legal_moves_count = self.board.legal_moves.count()
         legal_moves = list(self.board.legal_moves)
@@ -86,6 +94,7 @@ class Searcher:
 
                 # self.minimax(board, depth + 1, True)
                 best_move_eval = move_eval
+                best_move = legal_move
                 if first:
                     self.best_move_this_iteration = legal_move
                     #self.best_move_this_iteration_eval = move_eval
@@ -95,6 +104,7 @@ class Searcher:
             if move_eval >= beta:
                 return best_move_eval
 
+        #self.transpositionTable.store_evaluation(depth, best_move_eval, best_move)
         return best_move_eval
 
     def quiesce(self, alpha, beta):

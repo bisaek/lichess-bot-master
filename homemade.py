@@ -28,8 +28,7 @@ class Bot(MinimalEngine):
         #moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
         #logger.info(moves)
 
-        searcher = Searcher(board, 5)
-
+        searcher = Searcher(board, 20)
         chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(searcher.start_search(), None)
         

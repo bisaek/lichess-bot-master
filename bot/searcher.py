@@ -29,10 +29,10 @@ class Searcher:
         #self.best_move_this_iteration_eval = float("-inf")
 
     def start_search(self):
-        logger.info(self.get_ordered_legal_moves())
         self.cancelled = False
         self.start_time = time.time()
         for depth in range(1, 20):
+            logger.info(self.get_ordered_legal_moves())
             self.alpha_beta(depth, float("-inf"), float("inf"), 0, True)
             logger.info(f'Depth: {depth}')
             logger.info(f'Time: {time.time() - self.start_time}')
@@ -125,6 +125,9 @@ class Searcher:
         return moves
 
     def move_ordering(self, move: chess.Move):
+        if move == self.best_move:
+            logger.info("same move")
+            return 9999999
         score = 0
         if self.board.is_capture(move):
             score = 10 * get_piece_value(self.board.piece_at(move.to_square).piece_type) - get_piece_value(self.board.piece_at(move.from_square).piece_type)

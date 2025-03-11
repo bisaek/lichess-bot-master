@@ -8,7 +8,8 @@ PIECE_VALUES = {
     chess.BISHOP: 320,
     chess.KNIGHT: 330,
     chess.ROOK: 500,
-    chess.QUEEN: 900
+    chess.QUEEN: 900,
+    chess.KING: 999999,
 }
 
 PAWN_PIECE_SQUARE_TABLE = [0,  0,  0,  0,  0,  0,  0,  0,

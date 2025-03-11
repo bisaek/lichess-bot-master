@@ -70,9 +70,12 @@ class Searcher:
         best_move = None
         i = 0
         legal_moves_count = self.board.legal_moves.count()
-        legal_moves = list(self.board.legal_moves)
-        if first:
-            legal_moves = self.get_ordered_legal_moves()
+
+        prev_best_move = self.best_move if first else self.transpositionTable.get_move()
+
+        legal_moves = self.get_ordered_legal_moves(prev_best_move)
+        #if first:
+        #    legal_moves = self.get_ordered_legal_moves()
         for legal_move in legal_moves:
             i += 1
             if time.time() - self.start_time >= self.seach_time:
@@ -141,18 +144,23 @@ class Searcher:
                 alpha = score
         return best_value
 
-    def get_ordered_legal_moves(self):
+    def get_ordered_legal_moves(self, prev_best_move: chess.Move):
         moves = list(self.board.legal_moves)
-        moves.sort(key=self.move_ordering, reverse=True)
+        moves.sort(key=lambda move: self.move_ordering(move, prev_best_move), reverse=True)
         return moves
 
-    def move_ordering(self, move: chess.Move):
-        if move == self.best_move:
-            logger.info("same move")
+    def move_ordering(self, move: chess.Move, prev_best_move: chess.Move):
+        if move == prev_best_move:
+            #logger.info("same move")
             return 9999999
         score = 0
+
         if self.board.is_capture(move):
-            score = 10 * get_piece_value(self.board.piece_at(move.to_square).piece_type) - get_piece_value(self.board.piece_at(move.from_square).piece_type)
+            target_piece_type = self.board.piece_type_at(move.to_square)
+            if target_piece_type is None:
+                target_piece_type = chess.PAWN
+            score = 10 * target_piece_type - get_piece_value(self.board.piece_type_at(move.from_square))
+
         return score
 
     def determine_extension(self, extensions_length):

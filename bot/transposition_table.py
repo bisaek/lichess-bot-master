@@ -29,6 +29,9 @@ class TranspositionTable:
                 return entry.value, alpha, beta
         return None, alpha, beta
 
+    def get_move(self):
+        return self.entries[self.get_index()].move
+
     def get_index(self):
         return chess.polyglot.zobrist_hash(self.board) % self.count
 

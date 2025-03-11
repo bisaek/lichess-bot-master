@@ -13,10 +13,13 @@ from lib.engine_wrapper import MinimalEngine
 from lib.lichess_types import MOVE, HOMEMADE_ARGS_TYPE
 import logging
 from bot.searcher import Searcher
+from bot.transposition_table import TranspositionTable
 # Use this logger variable to print messages to the console or log files.
 # logger.info("message") will always print "message" to the console or log file.
 # logger.debug("message") will only print "message" if verbose logging is enabled.
 logger = logging.getLogger(__name__)
+
+transpositionTable = TranspositionTable()
 
 class Bot(MinimalEngine):
 
@@ -27,8 +30,8 @@ class Bot(MinimalEngine):
         #moves = list(board.legal_moves)
         #moves.sort(key=lambda move : self.move_ordering(move, board), reverse=True)
         #logger.info(moves)
-
-        searcher = Searcher(board, 20)
+        transpositionTable.board = board
+        searcher = Searcher(board, transpositionTable, 20)
         chess.Board.__hash__ = chess.polyglot.zobrist_hash
         return PlayResult(searcher.start_search(), None)
         

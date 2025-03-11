@@ -2,13 +2,13 @@ import chess
 import logging
 import time
 from bot.evaluation import eval, get_piece_value
-from bot.transposition_table import TranspositionTable
+from bot.transposition_table import TranspositionTable, EXACT, UPPERBOUND, LOWERBOUND
 
 logger = logging.getLogger(__name__)
 
 
 class Searcher:
-    def __init__(self, board: chess.Board, seach_time=60):
+    def __init__(self, board: chess.Board, transposition_table: TranspositionTable, seach_time=60):
         #self.depth = depth
         self.seach_time = seach_time
         self.extensions_length = 0
@@ -28,7 +28,7 @@ class Searcher:
         self.best_move_this_iteration = None
         #self.best_move_this_iteration_eval = float("-inf")
 
-        self.transpositionTable = TranspositionTable(board)
+        self.transpositionTable = transposition_table
 
     def start_search(self):
         self.cancelled = False
@@ -54,14 +54,18 @@ class Searcher:
 
     def alpha_beta(self, depth, alpha, beta, extensions_length, first=False):
         self.counter += 1
+
+        alpha_orig = alpha
+
+        tt_eval, alpha, beta = self.transpositionTable.get_evaluation(depth, alpha, beta)
+        if tt_eval is not None:
+            #logger.info(tt_eval)
+            return tt_eval
+
         if depth == 0 or self.board.legal_moves.count() == 0:
             # if depth >= 10 or board.legal_moves.count() >= 10 or board.legal_moves.count() == 0:
             return self.quiesce(alpha, beta)
             # logger.info(depth)
-
-        #tt_eval = self.transpositionTable.get_evaluation(depth)
-        #if tt_eval is not None:
-        #    return tt_eval
         best_move_eval = float("-inf")
         best_move = None
         i = 0
@@ -102,9 +106,17 @@ class Searcher:
                     alpha = move_eval
 
             if move_eval >= beta:
-                return best_move_eval
+                break
 
         #self.transpositionTable.store_evaluation(depth, best_move_eval, best_move)
+
+        if best_move_eval <= alpha_orig:
+            self.transpositionTable.store_evaluation(depth, best_move_eval, best_move, UPPERBOUND)
+        elif best_move_eval >= beta:
+            self.transpositionTable.store_evaluation(depth, best_move_eval, best_move, LOWERBOUND)
+        else:
+            self.transpositionTable.store_evaluation(depth, best_move_eval, best_move, LOWERBOUND)
+
         return best_move_eval
 
     def quiesce(self, alpha, beta):

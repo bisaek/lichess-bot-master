@@ -38,12 +38,17 @@ class Draw:
         file = pos[0] // SQUARE_SIZE
         rank = pos[1] // SQUARE_SIZE
         square = chess.square(file, rank) if self.color_viewer == chess.BLACK else chess.square(7 - file, 7 - rank)
+
         if self.board.piece_at(square) is not None and self.board.piece_at(square).color == self.board.turn:
             self.square_selected = square
             self.legal_moves_squares = []
             for move in list(self.board.legal_moves):
                 if move.from_square == square:
                     self.legal_moves_squares.append(move.to_square)
+        elif square in self.legal_moves_squares:
+            self.board.push(chess.Move(self.square_selected, square))
+            self.legal_moves_squares = []
+            self.square_selected = None
 
     def draw(self):
         self.screen.fill((255, 255, 255))

@@ -32,7 +32,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                board.select_square()
+                board.mouse_button_down()
         board.draw_board()
         pygame.display.flip()
 

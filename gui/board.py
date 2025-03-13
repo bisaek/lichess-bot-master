@@ -33,7 +33,7 @@ class Board:
         self.legal_moves_squares = []
         self.color_viewer = color_viewer
 
-    def select_square(self):
+    def mouse_button_down(self):
         pos = pygame.mouse.get_pos()
         file = pos[0] // SQUARE_SIZE
         rank = pos[1] // SQUARE_SIZE

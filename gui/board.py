@@ -25,10 +25,10 @@ WHITE_PIECES_IMG = {
     chess.KING: load_piece_img('images/white-king.png'),
 }
 
-class Draw:
-    def __init__(self, screen: pygame.display, board: chess.Board, color_viewer: chess.Color):
+class Board:
+    def __init__(self, screen: pygame.display, color_viewer: chess.Color):
         self.screen = screen
-        self.board = board
+        self.board = chess.Board()
         self.square_selected = None
         self.legal_moves_squares = []
         self.color_viewer = color_viewer
@@ -49,10 +49,6 @@ class Draw:
             self.board.push(chess.Move(self.square_selected, square))
             self.legal_moves_squares = []
             self.square_selected = None
-
-    def draw(self):
-        self.screen.fill((255, 255, 255))
-        self.draw_board()
 
     def draw_board(self):
         for square in chess.SQUARES:

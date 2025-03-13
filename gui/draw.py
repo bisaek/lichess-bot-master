@@ -26,17 +26,24 @@ WHITE_PIECES_IMG = {
 }
 
 class Draw:
-    def __init__(self, screen: pygame.display, board: chess.Board):
+    def __init__(self, screen: pygame.display, board: chess.Board, color_viewer: chess.Color):
         self.screen = screen
         self.board = board
         self.square_selected = None
+        self.legal_moves_squares = []
+        self.color_viewer = color_viewer
 
     def select_square(self):
         pos = pygame.mouse.get_pos()
         file = pos[0] // SQUARE_SIZE
         rank = pos[1] // SQUARE_SIZE
-        square = chess.square(file, rank)
-        self.square_selected = square
+        square = chess.square(file, rank) if self.color_viewer == chess.BLACK else chess.square(7 - file, 7 - rank)
+        if self.board.piece_at(square) is not None and self.board.piece_at(square).color == self.board.turn:
+            self.square_selected = square
+            self.legal_moves_squares = []
+            for move in list(self.board.legal_moves):
+                if move.from_square == square:
+                    self.legal_moves_squares.append(move.to_square)
 
     def draw(self):
         self.screen.fill((255, 255, 255))
@@ -47,7 +54,10 @@ class Draw:
             file = chess.square_file(square)
             rank = chess.square_rank(square)
             square_color = self.get_square_color(square)
+
             square_rect = (file * SQUARE_SIZE, rank * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
+            if self.color_viewer == chess.WHITE:
+                square_rect = ((7 - file) * SQUARE_SIZE, (7 - rank) * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE)
             pygame.draw.rect(self.screen, square_color, square_rect)
 
             piece_type = self.board.piece_type_at(square)
@@ -59,6 +69,8 @@ class Draw:
     def get_square_color(self, square: chess.Square):
         if square == self.square_selected:
             return 130, 151, 105
+        elif square in self.legal_moves_squares:
+            return 235, 64, 52
         elif (chess.square_file(square) + chess.square_rank(square)) % 2 == 0:
             return 240, 217, 181
         else:

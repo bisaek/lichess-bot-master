@@ -10,7 +10,7 @@ def main():
     running = True
 
     board = chess.Board()
-    draw = Draw(screen, board)
+    draw = Draw(screen, board, chess.WHITE)
 
     while running:
         for event in pygame.event.get():

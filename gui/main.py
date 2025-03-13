@@ -15,16 +15,10 @@ def main():
 
     is_engine_searching = False
     while running:
-        if board.board.turn == chess.BLACK:
-            if not is_engine_searching:
-                is_engine_searching = True
-                return_queue = Queue()
-                engine_process = Process(target=engine, args=(board.board, board.transposition_table, return_queue))
-                engine_process.start()
-            elif not engine_process.is_alive():
-                move = return_queue.get()
-                board.make_move(move)
-                is_engine_searching = False
+        if board.is_bots_turn():
+            board.bot_move()
+
+
             #engine(board, transposition_table)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

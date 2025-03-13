@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class Searcher:
     def __init__(self, board: chess.Board, transposition_table: TranspositionTable, seach_time=60):
-        #self.depth = depth
+        self.depth = 0
         self.seach_time = seach_time
         self.extensions_length = 0
         self.board = board
@@ -46,6 +46,7 @@ class Searcher:
             logger.info(self.board.fen())
             logger.info(self.board)
             if not self.cancelled:
+                self.depth = depth
                 self.best_move = self.best_move_this_iteration
             else:
                 break

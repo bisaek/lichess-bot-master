@@ -1,6 +1,7 @@
 import pygame
 import chess
-
+from multiprocessing import Process, Queue
+from bot.searcher import Searcher
 from bot.transposition_table import TranspositionTable
 
 SQUARE_SIZE = 75
@@ -27,8 +28,17 @@ WHITE_PIECES_IMG = {
     chess.KING: load_piece_img('images/white-king.png'),
 }
 
+
+def get_bot_move(board, transposition_table, return_queue: Queue):
+    transposition_table.board = board
+    searcher = Searcher(board, transposition_table, 5)
+    return_queue.put(searcher.start_search())
+
+
 class Board:
     def __init__(self, screen: pygame.display, color_viewer: chess.Color):
+        self.searcher_queue = None
+        self.bot_move_process = None
         self.screen = screen
         self.board = chess.Board()
         self.square_selected = None
@@ -39,6 +49,7 @@ class Board:
             chess.WHITE: "player",
             chess.BLACK: "bot",
         }
+        self.bot_searching = False
 
     def mouse_button_down(self):
         pos = pygame.mouse.get_pos()
@@ -59,6 +70,20 @@ class Board:
         self.board.push(move)
         self.legal_moves_squares = []
         self.square_selected = None
+
+    def bot_move(self):
+        if not self.bot_searching:
+            self.bot_searching = True
+            self.searcher_queue = Queue()
+            self.bot_move_process = Process(target=get_bot_move, args=(self.board, self.transposition_table, self.searcher_queue))
+            self.bot_move_process.start()
+        if not self.bot_move_process.is_alive():
+            searcher = self.searcher_queue.get()
+            self.make_move(searcher)
+            self.bot_searching = False
+
+    def is_bots_turn(self):
+        return "bot" == self.players[self.board.turn]
 
     def draw_board(self):
         for square in chess.SQUARES:

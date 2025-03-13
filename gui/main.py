@@ -27,6 +27,7 @@ def main():
             elif not engine_process.is_alive():
                 move = return_queue.get()
                 board.push(move)
+                is_engine_searching = False
             #engine(board, transposition_table)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

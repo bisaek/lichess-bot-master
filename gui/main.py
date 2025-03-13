@@ -3,7 +3,6 @@ import chess
 from multiprocessing import Process, Queue
 from board import Board, SQUARE_SIZE
 from bot.searcher import Searcher
-from bot.transposition_table import TranspositionTable
 
 
 def main():
@@ -14,18 +13,17 @@ def main():
 
     board = Board(screen, chess.WHITE)
 
-    transposition_table = TranspositionTable()
     is_engine_searching = False
     while running:
         if board.board.turn == chess.BLACK:
             if not is_engine_searching:
                 is_engine_searching = True
                 return_queue = Queue()
-                engine_process = Process(target=engine, args=(board.board, transposition_table, return_queue))
+                engine_process = Process(target=engine, args=(board.board, board.transposition_table, return_queue))
                 engine_process.start()
             elif not engine_process.is_alive():
                 move = return_queue.get()
-                board.board.push(move)
+                board.make_move(move)
                 is_engine_searching = False
             #engine(board, transposition_table)
         for event in pygame.event.get():

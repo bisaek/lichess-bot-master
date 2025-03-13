@@ -1,6 +1,8 @@
 import pygame
 import chess
 
+from bot.transposition_table import TranspositionTable
+
 SQUARE_SIZE = 75
 
 def load_piece_img(path):
@@ -32,6 +34,11 @@ class Board:
         self.square_selected = None
         self.legal_moves_squares = []
         self.color_viewer = color_viewer
+        self.transposition_table = TranspositionTable()
+        self.players = {
+            chess.WHITE: "player",
+            chess.BLACK: "bot",
+        }
 
     def mouse_button_down(self):
         pos = pygame.mouse.get_pos()
@@ -45,10 +52,13 @@ class Board:
             for move in list(self.board.legal_moves):
                 if move.from_square == square:
                     self.legal_moves_squares.append(move.to_square)
-        elif square in self.legal_moves_squares:
-            self.board.push(chess.Move(self.square_selected, square))
-            self.legal_moves_squares = []
-            self.square_selected = None
+        elif self.players[self.board.turn] == "player" and square in self.legal_moves_squares:
+            self.make_move(chess.Move(self.square_selected, square))
+
+    def make_move(self, move):
+        self.board.push(move)
+        self.legal_moves_squares = []
+        self.square_selected = None
 
     def draw_board(self):
         for square in chess.SQUARES:

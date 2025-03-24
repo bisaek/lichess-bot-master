@@ -3,6 +3,7 @@ import chess
 from multiprocessing import Process, Queue
 from bot.searcher import Searcher
 from bot.transposition_table import TranspositionTable
+from engine import get_bot_searcher_after_search
 
 SQUARE_SIZE = 75
 
@@ -35,7 +36,7 @@ def get_bot_move(board, transposition_table, return_queue: Queue):
     return_queue.put(searcher.start_search())
 
 
-class Board:
+class BoardUI:
     def __init__(self, screen: pygame.display, color_viewer: chess.Color):
         self.searcher_queue = None
         self.bot_move_process = None
@@ -47,7 +48,7 @@ class Board:
         self.transposition_table = TranspositionTable()
         self.players = {
             chess.WHITE: "player",
-            chess.BLACK: "bot",
+            chess.BLACK: "player",
         }
         self.bot_searching = False
 
@@ -74,11 +75,14 @@ class Board:
     def bot_move(self):
         if not self.bot_searching:
             self.bot_searching = True
+            print("gegsdsdsssssssssssf")
             self.searcher_queue = Queue()
-            self.bot_move_process = Process(target=get_bot_move, args=(self.board, self.transposition_table, self.searcher_queue))
+            self.bot_move_process = Process(target=get_bot_searcher_after_search, args=(self.board, self.transposition_table, self.searcher_queue))
             self.bot_move_process.start()
         if not self.bot_move_process.is_alive():
+            print("gegesdf")
             searcher = self.searcher_queue.get()
+            print(searcher)
             self.make_move(searcher)
             self.bot_searching = False
 

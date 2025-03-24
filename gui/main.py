@@ -1,8 +1,14 @@
 import pygame
 import chess
 from multiprocessing import Process, Queue
-from board import Board, SQUARE_SIZE
+from board import BoardUI, SQUARE_SIZE
 from bot.searcher import Searcher
+from test.versus.versus import Versus
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def main():
@@ -10,13 +16,15 @@ def main():
     screen = pygame.display.set_mode((800, 600))
     clock = pygame.time.Clock()
     running = True
-
-    board = Board(screen, chess.WHITE)
+    logger.info("test")
+    board = BoardUI(screen, chess.WHITE)
+    versus = Versus(1, 1, board)
+    versus.start_games()
 
     is_engine_searching = False
     while running:
-        if board.is_bots_turn():
-            board.bot_move()
+        #if board.is_bots_turn():
+        #    board.bot_move()
 
 
             #engine(board, transposition_table)

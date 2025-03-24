@@ -23,7 +23,7 @@ class Searcher:
 
         self.cancelled = False
 
-        self.best_move = None
+        self.best_move = list(board.legal_moves)[0]
         #self.best_move_eval = float("-inf")
         self.best_move_this_iteration = None
         #self.best_move_this_iteration_eval = float("-inf")

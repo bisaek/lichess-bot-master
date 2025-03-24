@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import chess
 import chess.polyglot
+
 EXACT = 0
 LOWERBOUND = 1
 UPPERBOUND = 2

@@ -7,6 +7,8 @@ from threading import Thread
 
 from bot.searcher import Searcher
 from bot.transposition_table import TranspositionTable
+from bot import Bot
+from bot2 import Bot as Bot2
 
 
 class Versus:
@@ -18,10 +20,10 @@ class Versus:
         self.draws = 0
         self.boardUI = boardUI
         self.players = {
-            chess.WHITE: "bot",
-            chess.BLACK: "bot",
+            chess.WHITE: Bot(),
+            chess.BLACK: Bot2(),
         }
-
+        self.color_reverse = False
         self.boardUI.players = self.players
         self.boardUI.versus = self
 
@@ -59,35 +61,44 @@ class Versus:
     def start_games(self):
         print("test")
         with open('fens.txt', 'r') as f:
-            boards = [chess.Board(line) for line in f]
+            boards = [chess.Board(fen) for line in f for fen in [line, line]]
+            print(boards)
         for board in boards:
             #self.boardUI.board = board
             #self.boardUI.draw_board()
             #self.board = board
-            self.boardUI.board = chess.Board(board.fen())
+            self.boardUI.board = board.copy()
             #pygame.display.flip()
             while not board.is_game_over():
                 if self.players[board.turn] == "player":
                     board = self.boardUI.board.copy()
                 else:
-                    transposition_table = TranspositionTable()
-                    transposition_table.board = board
-                    searcher = Searcher(board, transposition_table, 100)
+                    #transposition_table = TranspositionTable()
+                    #transposition_table.board = board
+                    #searcher = Searcher(board, transposition_table, 100)
                     #self.boardUI.searcher = searcher
-                    self.searcher = searcher
-                    board.push(searcher.start_search())
+                    #self.players[board.turn].best_move(board)
+                    #self.searcher = searcher
+                    board.push(self.players[board.turn].best_move(board))
                     self.boardUI.board = board.copy()
 
 
                     #self.boardUI.draw_board()
                     #pygame.display.flip()
                     print(board)
-            if board.outcome().winner == chess.WHITE:
+                    print(self.players[chess.WHITE])
+            if (board.outcome().winner == chess.WHITE and not self.color_reverse) or (board.outcome().winner == chess.BLACK and self.color_reverse):
                 self.player1_wins += 1
-            elif board.outcome().winner == chess.BLACK:
+            elif (board.outcome().winner == chess.BLACK and not self.color_reverse) or (board.outcome().winner == chess.WHITE and self.color_reverse):
                 self.player2_wins += 1
             else:
                 self.draws += 1
+
+            self.players = {
+                chess.WHITE: self.players[chess.BLACK],
+                chess.BLACK: self.players[chess.WHITE],
+            }
+            self.color_reverse = not self.color_reverse
 
             print(f"{self.player1_wins=}, {self.player2_wins=}, {self.draws=}")
 

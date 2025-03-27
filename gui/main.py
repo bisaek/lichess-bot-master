@@ -14,12 +14,14 @@ logger.setLevel(logging.INFO)
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    pygame.font.init()
+    screen = pygame.display.set_mode((1000, 600))
     clock = pygame.time.Clock()
     running = True
     logger.info("test")
     board = BoardUI(screen, chess.WHITE)
     versus = Versus(board)
+    board.versus = versus
     #Thread(target=versus.start_games)
 
     is_engine_searching = False
@@ -34,7 +36,10 @@ def main():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 board.mouse_button_down()
+
+        screen.fill("white")
         board.draw_board()
+        board.draw_info()
         pygame.display.flip()
 
     pygame.quit()

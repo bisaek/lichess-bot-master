@@ -7,6 +7,7 @@ from gui.engine import get_bot_searcher_after_search
 
 SQUARE_SIZE = 75
 
+
 def load_piece_img(path):
     return pygame.transform.scale(pygame.image.load(path), (SQUARE_SIZE, SQUARE_SIZE))
 
@@ -41,6 +42,7 @@ class BoardUI:
         self.searcher_queue = None
         self.bot_move_process = None
         self.screen = screen
+        self.versus = None
         self.board = chess.Board()
         self.square_selected = None
         self.legal_moves_squares = []
@@ -105,6 +107,24 @@ class BoardUI:
                 self.screen.blit(WHITE_PIECES_IMG[piece_type], square_rect)
             elif self.board.color_at(square) == chess.BLACK:
                 self.screen.blit(BLACK_PIECES_IMG[piece_type], square_rect)
+
+    def draw_info(self):
+        x = SQUARE_SIZE * 8 + 10
+        y = 0
+        font = pygame.font.SysFont('Comic Sans MS', 30)
+        info = []
+
+        info.append(f"player1 wins: {self.versus.player1_wins}")
+        info.append(f"player2 wins: {self.versus.player2_wins}")
+        info.append(f"draws: {self.versus.draws}")
+
+        if self.versus.searcher is not None:
+            info.append("depth: " + str(self.versus.searcher.depth))
+            info.append(f"best move: {self.versus.searcher.best_move}")
+        for text in info:
+            text_ui = font.render(text, True, (0, 0, 0))
+            self.screen.blit(text_ui, (x, y))
+            y += 50
 
     def get_square_color(self, square: chess.Square):
         if square == self.square_selected:

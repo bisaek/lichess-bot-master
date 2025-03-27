@@ -11,10 +11,19 @@ from bot.transposition_table import TranspositionTable
 
 class Versus:
     def __init__(self, boardUI):
+        self.searcher = None
+        self.board = None
         self.player1_wins = 0
         self.player2_wins = 0
         self.draws = 0
         self.boardUI = boardUI
+        self.players = {
+            chess.WHITE: "bot",
+            chess.BLACK: "bot",
+        }
+
+        self.boardUI.players = self.players
+        self.boardUI.versus = self
 
         Thread(target=self.start_games).start()
 
@@ -54,20 +63,28 @@ class Versus:
         for board in boards:
             #self.boardUI.board = board
             #self.boardUI.draw_board()
-            self.board = board
+            #self.board = board
+            self.boardUI.board = chess.Board(board.fen())
             #pygame.display.flip()
             while not board.is_game_over():
-                transposition_table = TranspositionTable()
-                transposition_table.board = self.board
-                searcher = Searcher(self.board, transposition_table, 1)
-                self.board.push(searcher.start_search())
-                self.boardUI.board = chess.Board(board.fen())
-                #self.boardUI.draw_board()
-                #pygame.display.flip()
-                print(board)
-            if self.board.outcome().winner == chess.WHITE:
+                if self.players[board.turn] == "player":
+                    board = self.boardUI.board.copy()
+                else:
+                    transposition_table = TranspositionTable()
+                    transposition_table.board = board
+                    searcher = Searcher(board, transposition_table, 100)
+                    #self.boardUI.searcher = searcher
+                    self.searcher = searcher
+                    board.push(searcher.start_search())
+                    self.boardUI.board = board.copy()
+
+
+                    #self.boardUI.draw_board()
+                    #pygame.display.flip()
+                    print(board)
+            if board.outcome().winner == chess.WHITE:
                 self.player1_wins += 1
-            elif self.board.outcome().winner == chess.BLACK:
+            elif board.outcome().winner == chess.BLACK:
                 self.player2_wins += 1
             else:
                 self.draws += 1

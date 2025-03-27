@@ -3,7 +3,7 @@ import chess
 from multiprocessing import Process, Queue
 from bot.searcher import Searcher
 from bot.transposition_table import TranspositionTable
-from engine import get_bot_searcher_after_search
+from gui.engine import get_bot_searcher_after_search
 
 SQUARE_SIZE = 75
 

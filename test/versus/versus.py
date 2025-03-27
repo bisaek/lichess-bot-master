@@ -10,23 +10,28 @@ from bot.transposition_table import TranspositionTable
 
 
 class Versus:
-    def __init__(self):
+    def __init__(self, boardUI):
         self.player1_wins = 0
         self.player2_wins = 0
         self.draws = 0
-        self.board = chess.Board()
+        self.boardUI = boardUI
 
-        self.socket_player_1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_player_1.bind(('', 5555))
-        self.socket_player_1.listen()
-        self.socket_player_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_player_2.bind(('', 5556))
-        self.socket_player_2.listen()
+        Thread(target=self.start_games).start()
 
-        client_socket_player_1, adress_player_1 = self.socket_player_1.accept()
-        client_socket_player_2, adress_player_2 = self.socket_player_2.accept()
+        #Thread(target=main).start()
+        #self.start_games()
 
-        self.talk_to_client(client_socket_player_1)
+        #self.socket_player_1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.socket_player_1.bind(('', 5555))
+        #self.socket_player_1.listen()
+        #self.socket_player_2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.socket_player_2.bind(('', 5556))
+        #self.socket_player_2.listen()
+
+        #client_socket_player_1, adress_player_1 = self.socket_player_1.accept()
+        #client_socket_player_2, adress_player_2 = self.socket_player_2.accept()
+
+        #self.talk_to_client(client_socket_player_1)
 
     def talk_to_client(self, client_socket):
         Thread(target=self.receive_message, args=(client_socket)).start()
@@ -43,20 +48,20 @@ class Versus:
             print(client_message)
 
     def start_games(self):
-
+        print("test")
         with open('fens.txt', 'r') as f:
             boards = [chess.Board(line) for line in f]
         for board in boards:
             #self.boardUI.board = board
             #self.boardUI.draw_board()
             self.board = board
-            pygame.display.flip()
+            #pygame.display.flip()
             while not board.is_game_over():
                 transposition_table = TranspositionTable()
                 transposition_table.board = self.board
                 searcher = Searcher(self.board, transposition_table, 1)
                 self.board.push(searcher.start_search())
-                #self.boardUI.board = board
+                self.boardUI.board = chess.Board(board.fen())
                 #self.boardUI.draw_board()
                 #pygame.display.flip()
                 print(board)
@@ -70,5 +75,5 @@ class Versus:
             print(f"{self.player1_wins=}, {self.player2_wins=}, {self.draws=}")
 
 
-versus = Versus()
+#versus = Versus()
 #versus.start_games()

@@ -1,7 +1,8 @@
 import pygame
 import chess
 from multiprocessing import Process, Queue
-from board import BoardUI, SQUARE_SIZE
+from threading import Thread
+from gui.board import BoardUI, SQUARE_SIZE
 from bot.searcher import Searcher
 from test.versus.versus import Versus
 import logging
@@ -18,8 +19,8 @@ def main():
     running = True
     logger.info("test")
     board = BoardUI(screen, chess.WHITE)
-    versus = Versus(1, 1, board)
-    versus.start_games()
+    versus = Versus(board)
+    #Thread(target=versus.start_games)
 
     is_engine_searching = False
     while running:

@@ -9,4 +9,4 @@ lichess_bot_auto_logs/*
 *.log
 *.txt
 TEMP/*
-/bot2/*
+bot2/

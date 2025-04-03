@@ -11,5 +11,5 @@ class Bot:
 
     def best_move(self, board: chess.Board):
         #self.transposition_table.board = board
-        searcher = Searcher(board, 20)
+        searcher = Searcher(board, 0.2)
         return searcher.start_search()

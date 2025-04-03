@@ -1,3 +1,4 @@
+import collections
 from multiprocessing import Process, Value
 
 import chess
@@ -9,6 +10,7 @@ from bot.searcher import Searcher
 from bot.transposition_table import TranspositionTable
 from bot import Bot
 from bot2 import Bot as Bot2
+import chess.pgn
 
 
 class Versus:
@@ -26,6 +28,7 @@ class Versus:
         self.color_reverse = False
         self.boardUI.players = self.players
         self.boardUI.versus = self
+
 
         Thread(target=self.start_games).start()
 
@@ -101,6 +104,27 @@ class Versus:
             self.color_reverse = not self.color_reverse
 
             print(f"{self.player1_wins=}, {self.player2_wins=}, {self.draws=}")
+            print(self.get_pgn(board))
+
+    def get_pgn(self, board: chess.Board):
+        game = chess.pgn.Game()
+
+        # Undo all moves.
+        switchyard = collections.deque()
+        while board.move_stack:
+            switchyard.append(board.pop())
+
+        game.setup(board)
+        node = game
+
+        # Replay all moves.
+        while switchyard:
+            move = switchyard.pop()
+            node = node.add_variation(move)
+            board.push(move)
+
+        game.headers["Result"] = board.result()
+        return game
 
 
 #versus = Versus()

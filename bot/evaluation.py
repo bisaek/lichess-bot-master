@@ -12,6 +12,19 @@ PIECE_VALUES = {
     chess.KING: 999999,
 }
 
+KING_SAFETY_TABLE = [
+    0, 0, 1, 2, 3, 5, 7, 9, 12, 15,
+    18, 22, 26, 30, 35, 39, 44, 50, 56, 62,
+    68, 75, 82, 85, 89, 97, 105, 113, 122, 131,
+    140, 150, 169, 180, 191, 202, 213, 225, 237, 248,
+    260, 272, 283, 295, 307, 319, 330, 342, 354, 366,
+    377, 389, 401, 412, 424, 436, 448, 459, 471, 483,
+    494, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+    500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+    500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+    500, 500, 500, 500, 500, 500, 500, 500, 500, 500
+]
+
 PAWN_PIECE_SQUARE_TABLE = [0,  0,  0,  0,  0,  0,  0,  0,
                            50, 50, 50, 50, 50, 50, 50, 50,
                            10, 10, 20, 30, 30, 20, 10, 10,
@@ -87,6 +100,29 @@ def is_end_game(board: chess.Board):
 def get_piece_value(piece_type: chess.PieceType):
     return PIECE_VALUES[piece_type]
 
+def king_safety(board: chess.Board, color: chess.Color):
+    king = board.king(color)
+    king_zone = board.attacks(king)
+    king_zone.add(king)
+    king_zone.add(king + 15)
+    king_zone.add(king + 16)
+    king_zone.add(king + 17)
+
+    #print(king_zone)
+    attackers = {}
+    for square in king_zone:
+        attackers.update(board.piece_map(mask=board.attackers(not color, square).mask))
+
+    attack_units = 0
+    for attacker in attackers.values():
+        if attacker.piece_type in [chess.BISHOP, chess.KNIGHT]:
+            attack_units += 2
+        elif attacker.piece_type == chess.ROOK:
+            attack_units += 3
+        elif attacker.piece_type == chess.QUEEN:
+            attack_units += 5
+
+    return KING_SAFETY_TABLE[attack_units]
 
 def is_defended(board: chess.Board, square, color) -> bool:
     if color == chess.WHITE:
@@ -109,6 +145,8 @@ def eval(board: chess.Board, color: chess.Color, log=False):
     eval += len(board.pieces(chess.BISHOP, color)) * get_piece_value(chess.BISHOP)
     eval += len(board.pieces(chess.ROOK, color)) * get_piece_value(chess.ROOK)
     eval += len(board.pieces(chess.QUEEN, color)) * get_piece_value(chess.QUEEN)
+
+    eval -= king_safety(board, color)
 
     for pawn in list(board.pieces(chess.PAWN, color)):
         if color == chess.WHITE:
@@ -152,3 +190,8 @@ def eval(board: chess.Board, color: chess.Color, log=False):
             else:
                 eval += KING_MIDDLE_GAME_PIECE_SQUARE_TABLE[king]
     return eval
+
+if __name__ == '__main__':
+    board = chess.Board("1nbqk1nr/pppppppp/3r4/7b/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1")
+    print(king_safety(board, chess.WHITE))
+

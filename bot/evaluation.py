@@ -104,9 +104,14 @@ def king_safety(board: chess.Board, color: chess.Color):
     king = board.king(color)
     king_zone = board.attacks(king)
     king_zone.add(king)
-    king_zone.add(king + 15)
-    king_zone.add(king + 16)
-    king_zone.add(king + 17)
+    if color == chess.WHITE:
+        king_zone.add(king + 15)
+        king_zone.add(king + 16)
+        king_zone.add(king + 17)
+    else:
+        king_zone.add(king - 15)
+        king_zone.add(king - 16)
+        king_zone.add(king - 17)
 
     #print(king_zone)
     attackers = {}
@@ -121,7 +126,7 @@ def king_safety(board: chess.Board, color: chess.Color):
             attack_units += 3
         elif attacker.piece_type == chess.QUEEN:
             attack_units += 5
-
+    #logger.info(KING_SAFETY_TABLE[attack_units])
     return KING_SAFETY_TABLE[attack_units]
 
 def is_defended(board: chess.Board, square, color) -> bool:
@@ -147,6 +152,8 @@ def eval(board: chess.Board, color: chess.Color, log=False):
     eval += len(board.pieces(chess.QUEEN, color)) * get_piece_value(chess.QUEEN)
 
     eval -= king_safety(board, color)
+    #logger.info(eval)
+
 
     for pawn in list(board.pieces(chess.PAWN, color)):
         if color == chess.WHITE:

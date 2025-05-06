@@ -92,6 +92,8 @@ KING_END_GAME_PIECE_SQUARE_TABLE = [-50,-40,-30,-20,-20,-30,-40,-50,
 
 PASSED_PAWN = [0, 120, 80, 50, 30, 15, 15]
 
+ISOLATED_PAWNS = [0, -10, -25, -50, -75, -75, -75, -75, -75]
+
 
 def is_end_game(board: chess.Board):
     zero_queens = len(board.pieces(chess.QUEEN, chess.WHITE)) == 0 and len(board.pieces(chess.QUEEN, chess.BLACK)) == 0
@@ -119,22 +121,37 @@ def passed_pawn_mask(pawn: chess.Square, color: chess.Color):
 
     return file_mask_all & forward_mask
 
-def passed_pawn(board: chess.Board, color: chess.Color):
+
+def isolated_pawn_mask(pawn: chess.Square, color: chess.Color):
+    file = chess.square_file(pawn)
+
+    mask_left = chess.BB_FILES[file - 1]if file > 0 else chess.BB_EMPTY
+    mask_right = chess.BB_FILES[file + 1] if file < 7 else chess.BB_EMPTY
+
+    return mask_left | mask_right
+
+def pawn_structure(board: chess.Board, color: chess.Color):
     bonus = 0
-    for pawn in board.pieces(chess.PAWN, color):
+    my_pawns = board.pieces(chess.PAWN, color)
+    enemy_pawns = board.pieces(chess.PAWN, not color)
+
+    isolated_pawns = 0
+
+    for pawn in my_pawns:
         rank = chess.square_rank(pawn)
-        mask = passed_pawn_mask(pawn, color)
 
-        enemy_pawns = board.pieces(chess.PAWN, not color)
-
-        if mask & int(enemy_pawns) == 0:
-            #print("passed pawn")
+        if passed_pawn_mask(pawn, color) & int(enemy_pawns) == 0:
             squares_from_promotion = 7 - rank if color == chess.WHITE else rank
             bonus += PASSED_PAWN[squares_from_promotion]
-            #print(bonus)
-        #print(chess.square_name(pawn))
-        #print(chess.SquareSet(mask))
+
+        #print(chess.SquareSet(isolated_pawn_mask(pawn, color)))
+        if isolated_pawn_mask(pawn, color) & int(my_pawns) == 0:
+            #print("is")
+            isolated_pawns += 1
+
+    bonus += ISOLATED_PAWNS[isolated_pawns]
     return bonus
+
 
 def king_safety(board: chess.Board, color: chess.Color):
     king = board.king(color)
@@ -188,7 +205,7 @@ def eval(board: chess.Board, color: chess.Color, log=False):
     eval += len(board.pieces(chess.QUEEN, color)) * get_piece_value(chess.QUEEN)
 
     eval -= king_safety(board, color)
-    eval += passed_pawn(board, color)
+    eval += pawn_structure(board, color)
     #logger.info(eval)
 
 
@@ -237,5 +254,5 @@ def eval(board: chess.Board, color: chess.Color, log=False):
 
 if __name__ == '__main__':
     _board = chess.Board("rnbqkbnr/p1P1pppp/8/8/8/1P6/P2PPPPP/RNBQKBNR w KQkq - 0 1")
-    print(passed_pawn(_board, chess.WHITE))
+    print(pawn_structure(_board, chess.BLACK))
 

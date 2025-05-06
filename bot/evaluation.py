@@ -1,6 +1,8 @@
 import chess
 import logging
 
+from chess import square
+
 logger = logging.getLogger(__name__)
 
 PIECE_VALUES = {
@@ -88,6 +90,8 @@ KING_END_GAME_PIECE_SQUARE_TABLE = [-50,-40,-30,-20,-20,-30,-40,-50,
                                     -30,-30,  0,  0,  0,  0,-30,-30,
                                     -50,-30,-30,-30,-30,-30,-30,-50]
 
+PASSED_PAWN = [0, 120, 80, 50, 30, 15, 15]
+
 
 def is_end_game(board: chess.Board):
     zero_queens = len(board.pieces(chess.QUEEN, chess.WHITE)) == 0 and len(board.pieces(chess.QUEEN, chess.BLACK)) == 0
@@ -99,6 +103,38 @@ def is_end_game(board: chess.Board):
 
 def get_piece_value(piece_type: chess.PieceType):
     return PIECE_VALUES[piece_type]
+
+def passed_pawn_mask(pawn: chess.Square, color: chess.Color):
+    rank = chess.square_rank(pawn)
+    file = chess.square_file(pawn)
+    if color == chess.WHITE:
+        forward_mask = chess.BB_ALL << (rank + 1) * 8
+    else:
+        forward_mask = chess.BB_ALL >> (7 - rank + 1) * 8
+
+    file_mask = chess.BB_FILES[file]
+    file_mask_left = chess.BB_FILES[max(0, file - 1)]
+    file_mask_right = chess.BB_FILES[min(7, file + 1)]
+    file_mask_all = file_mask | file_mask_left | file_mask_right
+
+    return file_mask_all & forward_mask
+
+def passed_pawn(board: chess.Board, color: chess.Color):
+    bonus = 0
+    for pawn in board.pieces(chess.PAWN, color):
+        rank = chess.square_rank(pawn)
+        mask = passed_pawn_mask(pawn, color)
+
+        enemy_pawns = board.pieces(chess.PAWN, not color)
+
+        if mask & int(enemy_pawns) == 0:
+            #print("passed pawn")
+            squares_from_promotion = 7 - rank if color == chess.WHITE else rank
+            bonus += PASSED_PAWN[squares_from_promotion]
+            #print(bonus)
+        #print(chess.square_name(pawn))
+        #print(chess.SquareSet(mask))
+    return bonus
 
 def king_safety(board: chess.Board, color: chess.Color):
     king = board.king(color)
@@ -152,6 +188,7 @@ def eval(board: chess.Board, color: chess.Color, log=False):
     eval += len(board.pieces(chess.QUEEN, color)) * get_piece_value(chess.QUEEN)
 
     eval -= king_safety(board, color)
+    eval += passed_pawn(board, color)
     #logger.info(eval)
 
 
@@ -199,6 +236,6 @@ def eval(board: chess.Board, color: chess.Color, log=False):
     return eval
 
 if __name__ == '__main__':
-    board = chess.Board("1nbqk1nr/pppppppp/3r4/7b/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1")
-    print(king_safety(board, chess.WHITE))
+    _board = chess.Board("rnbqkbnr/p1P1pppp/8/8/8/1P6/P2PPPPP/RNBQKBNR w KQkq - 0 1")
+    print(passed_pawn(_board, chess.WHITE))
 
